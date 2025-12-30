@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 87b5337910ce875409be5415681a37b0
+guid: 176a5821c1ec70e45b365be77f24699f
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -97,11 +97,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: "\u62A0\u56FE\u53BB\u80CC\u666F (1)_0"
+      name: "\u56FE\u5C42 2_0"
       rect:
         serializedVersion: 2
-        x: 51
-        y: 412
+        x: 5
+        y: 346
         width: 632
         height: 294
       alignment: 0
@@ -111,18 +111,18 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 42a8ce5f5df83e940b8eb0ebc4ca72d7
-      internalID: 10380757
+      spriteID: a3812c6013590864088d78749567b608
+      internalID: 1838263906
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: "\u62A0\u56FE\u53BB\u80CC\u666F (1)_1"
+      name: "\u56FE\u5C42 2_1"
       rect:
         serializedVersion: 2
-        x: 791
-        y: 74
+        x: 745
+        y: 8
         width: 426
         height: 594
       alignment: 0
@@ -132,20 +132,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 53db5521174a8c54ca457bebdfa68da9
-      internalID: -2113495807
+      spriteID: 88dd4c50a0eee9d489f51cbb6779f593
+      internalID: 1854138636
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: "\u62A0\u56FE\u53BB\u80CC\u666F (1)_2"
+      name: "\u56FE\u5C42 2_2"
       rect:
         serializedVersion: 2
-        x: 929
-        y: 233
-        width: 393
-        height: 404
+        x: 1225
+        y: 155
+        width: 14
+        height: 500
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -153,20 +153,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 32dd07b44509211428c484ccea1a95d5
-      internalID: -1815837089
+      spriteID: fc48536b1eb6dfe4f9e856a967985a56
+      internalID: -90059689
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: "\u62A0\u56FE\u53BB\u80CC\u666F (1)_3"
+      name: "\u56FE\u5C42 2_3"
       rect:
         serializedVersion: 2
-        x: 972
-        y: 201
-        width: 352
-        height: 355
+        x: 0
+        y: 168
+        width: 665
+        height: 79
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -174,29 +174,29 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 3114b064cd18ac74ebc9202e2a89d945
-      internalID: -1836225409
+      spriteID: bc1ce5494f004234993421c68c049ab0
+      internalID: 1748964710
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: "\u62A0\u56FE\u53BB\u80CC\u666F (1)_4"
+      name: "\u56FE\u5C42 2_4"
       rect:
         serializedVersion: 2
-        x: 46
-        y: 164
-        width: 673
-        height: 149
-      alignment: 9
-      pivot: {x: 0.49828032, y: 0.4710504}
+        x: 4
+        y: 109
+        width: 661
+        height: 55
+      alignment: 0
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 36f34e1f28afb884d9f8f85be09e9c2d
-      internalID: 4995490
+      spriteID: 66c73b07b2f17fe438185761ab202bc6
+      internalID: 274729440
       vertices: []
       indices: 
       edges: []
@@ -212,13 +212,12 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_0": 10380757
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_1": -2113495807
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_2": -1815837089
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_3": -1836225409
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_4": 4995490
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_5": -1727380178
-      "\u62A0\u56FE\u53BB\u80CC\u666F (1)_6": -605269183
+      "\u56FE\u5C42 2_0": 1838263906
+      "\u56FE\u5C42 2_1": 1854138636
+      "\u56FE\u5C42 2_2": -90059689
+      "\u56FE\u5C42 2_3": 1748964710
+      "\u56FE\u5C42 2_4": 274729440
+      "\u56FE\u5C42 2_5": 1751902627
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
