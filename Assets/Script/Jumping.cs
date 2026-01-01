@@ -19,6 +19,8 @@ public class Jumping : MonoBehaviour
     private string paramPreparing = "isPreparing"; // Pre-jump
     private string paramRising = "isRising";       // Jumping
     private string paramFalling = "isFalling";     // Down
+    // 强制状态名 (Animator中必须有这个状态，名字必须一致)
+    private string stateDown = "Down";
 
     [Header("空中移动参数")]
     [Tooltip("空中加速度 (控制在空中的移动灵敏度)")]
@@ -81,11 +83,12 @@ public class Jumping : MonoBehaviour
         if (Input.GetKey(KeyCode.D)) moveInput += 1f;
 
         // 跳跃触发
-        if (Input.GetKeyDown(KeyCode.Space) && Mathf.Abs(rb.velocity.y) < 0.05f && !isPreparingJump)
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded() && !isPreparingJump)
         {
             StartCoroutine(PrepareJumpRoutine());
         }
 
+        // Variable Height (松手截断)
         if (enableVariableHeight && Input.GetKeyUp(KeyCode.Space))
         {
             if (rb.velocity.y > 0)
@@ -109,23 +112,46 @@ public class Jumping : MonoBehaviour
         }
     }
 
+    bool IsGrounded()
+    {
+        return Mathf.Abs(rb.velocity.y) < 0.05f;
+    }
+
     IEnumerator PrepareJumpRoutine()
     {
         isPreparingJump = true;
-
-        // 1. 设置 Pre-Jump 状态
         if (anim != null) anim.SetBool(paramPreparing, true);
 
-        // 2. 等待动画前摇
-        yield return new WaitForSeconds(preJumpDuration);
+        // 等待前摇
+        float elapsed = 0f;
+        while (elapsed < preJumpDuration)
+        {
+            elapsed += Time.deltaTime;
+            
+            // 掉落保护 (意外离开平台)
+            if (!IsGrounded())
+            {
+                isPreparingJump = false;
+                if (anim != null) 
+                {
+                    // 1. 强制重置参数
+                    anim.SetBool(paramPreparing, false);
+                    anim.SetBool(paramFalling, true);
+                    
+                    // 2. 强制播放 Down 动画 (最暴力也最有效的修正)
+                    anim.Play(stateDown);
+                }
+                yield break; // 退出协程
+            }
+            yield return null;
+        }
 
-        // 3. 执行起跳
-        Jump();
+        // 执行起跳
+        bool isHoldingSpace = Input.GetKey(KeyCode.Space);
+        Jump(isHoldingSpace); 
 
-        // 4. 退出 Pre-Jump 状态 (进入 Rising 状态)
         if (anim != null) anim.SetBool(paramPreparing, false);
         
-        // 增加一点缓冲，防止马上检测为落地
         yield return new WaitForSeconds(0.1f);
         isPreparingJump = false;
     }
@@ -138,11 +164,7 @@ public class Jumping : MonoBehaviour
         // 垂直运动处理
         if (velY > 0) 
         {
-            // 上升阶段：使用计算出的低重力
             rb.gravityScale = calculatedRiseGravityScale;
-            
-            // 修复：不要强制锁定速度，而是只限制最大速度
-            // 这样 JumpCutoff (Variable Height) 减少速度的操作就不会被覆盖了
             if (velY > maxRiseSpeed)
             {
                 velY = maxRiseSpeed;
@@ -150,7 +172,6 @@ public class Jumping : MonoBehaviour
         }
         else 
         {
-            // 下落阶段：使用高重力
             rb.gravityScale = fallGravityScale;
         }
 
@@ -178,8 +199,16 @@ public class Jumping : MonoBehaviour
         rb.velocity = new Vector2(velX, velY);
     }
 
-    void Jump()
+    void Jump(bool fullJump)
     {
-        rb.velocity = new Vector2(rb.velocity.x, maxRiseSpeed);
+        if (fullJump)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, maxRiseSpeed);
+        }
+        else
+        {
+            float reducedSpeed = maxRiseSpeed * (1f - jumpCutoff);
+            rb.velocity = new Vector2(rb.velocity.x, reducedSpeed);
+        }
     }
 }
