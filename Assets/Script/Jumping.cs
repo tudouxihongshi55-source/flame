@@ -46,6 +46,8 @@ public class Jumping : MonoBehaviour
     private Animator anim;
     private float moveInput;
     private bool isPreparingJump = false;
+    private bool wasFalling = false; // 用于音效去重
+    private bool wasInAir = false;   // 用于落地音效
 
     void Start()
     {
@@ -82,8 +84,10 @@ public class Jumping : MonoBehaviour
         if (Input.GetKey(KeyCode.A)) moveInput -= 1f;
         if (Input.GetKey(KeyCode.D)) moveInput += 1f;
 
+        bool isGrounded = IsGrounded();
+
         // 跳跃触发
-        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded() && !isPreparingJump)
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isPreparingJump)
         {
             StartCoroutine(PrepareJumpRoutine());
         }
@@ -97,18 +101,39 @@ public class Jumping : MonoBehaviour
             }
         }
 
-        // --- 更新 Animator 参数 ---
+        // --- 更新 Animator 参数 & 音效检测 ---
+        float vy = rb.velocity.y;
+        
+        bool isFalling = vy < -0.1f && !isPreparingJump;
+        bool isRising = vy > 0.1f && !isPreparingJump;
+
         if (anim != null)
         {
-            float vy = rb.velocity.y;
-            
-            // 下落状态: 速度 < -0.1 (且没在准备跳跃)
-            bool isFalling = vy < -0.1f && !isPreparingJump;
             anim.SetBool(paramFalling, isFalling);
-
-            // 上升状态: 速度 > 0.1 (且没在准备跳跃)
-            bool isRising = vy > 0.1f && !isPreparingJump;
             anim.SetBool(paramRising, isRising);
+        }
+
+        // 1. 开始下落音效
+        if (isFalling && !wasFalling)
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.PlaySFX(GameManager.Instance.sfxFallStart);
+        }
+        wasFalling = isFalling;
+
+        // 2. 落地音效
+        if (!isGrounded)
+        {
+            wasInAir = true;
+        }
+        else
+        {
+            if (wasInAir) // 刚才在空中，现在落地了
+            {
+                if (GameManager.Instance != null)
+                    GameManager.Instance.PlaySFX(GameManager.Instance.sfxLand);
+                wasInAir = false;
+            }
         }
     }
 
@@ -128,25 +153,21 @@ public class Jumping : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             
-            // 掉落保护 (意外离开平台)
+            // 掉落保护
             if (!IsGrounded())
             {
                 isPreparingJump = false;
                 if (anim != null) 
                 {
-                    // 1. 强制重置参数
                     anim.SetBool(paramPreparing, false);
                     anim.SetBool(paramFalling, true);
-                    
-                    // 2. 强制播放 Down 动画 (最暴力也最有效的修正)
                     anim.Play(stateDown);
                 }
-                yield break; // 退出协程
+                yield break;
             }
             yield return null;
         }
 
-        // 执行起跳
         bool isHoldingSpace = Input.GetKey(KeyCode.Space);
         Jump(isHoldingSpace); 
 
@@ -210,5 +231,17 @@ public class Jumping : MonoBehaviour
             float reducedSpeed = maxRiseSpeed * (1f - jumpCutoff);
             rb.velocity = new Vector2(rb.velocity.x, reducedSpeed);
         }
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.PlaySFX(GameManager.Instance.sfxJump);
+    }
+
+    // 修改：增加跳跃高度和速度 (叠加模式)
+    public void AddJumpAbility(float heightAdd, float speedAdd)
+    {
+        maxJumpHeight += heightAdd;
+        maxRiseSpeed += speedAdd;
+        RecalculatePhysics();
+        Debug.Log($"跳跃升级！新高度: {maxJumpHeight}, 新速度: {maxRiseSpeed}");
     }
 }
