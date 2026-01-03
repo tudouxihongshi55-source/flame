@@ -2,24 +2,27 @@ using UnityEngine;
 
 public class Checkpoint : MonoBehaviour
 {
-    [Header("À¯ÖòÉèÖÃ")]
-    [Tooltip("µãÁÁºóµÄÍ¼Æ¬")]
-    public Sprite litSprite;
-    [Tooltip("µãÁÁÊ±µÄ¹âĞ§ÎïÌå(¿ÉÑ¡)")]
-    public GameObject lightObj;
-
+    [Header("èœ¡çƒ›è®¾ç½®")]
+    [Tooltip("ç‚¹äº®åçš„å›¾ç‰‡")]
+    public Sprite litSprite; 
+    [Tooltip("ç‚¹äº®æ—¶çš„å…‰æ•ˆç‰©ä½“(å¯é€‰)")]
+    public GameObject lightObj; 
+    
+    [Header("å¤æ´»ä½ç½®å¾®è°ƒ")]
+    [Tooltip("è¯·åœ¨èœ¡çƒ›ä¸‹åˆ›å»ºä¸€ä¸ªç©ºç‰©ä½“ä½œä¸ºå¤æ´»ç‚¹ï¼Œå¹¶æ‹–åˆ°è¿™é‡Œ")]
+    public Transform spawnPointTransform; 
+    
     private bool isLit = false;
     private SpriteRenderer sr;
 
     void Start()
     {
         sr = GetComponent<SpriteRenderer>();
-        if (lightObj != null) lightObj.SetActive(false); // Ä¬ÈÏÏ¨Ãğ
+        if(lightObj != null) lightObj.SetActive(false); 
     }
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        // Ö»ÓĞÖ÷½ÇÄÜµãÁÁ£¬ÇÒÃ»µãÁÁ¹ı²Å´¥·¢
         if (other.CompareTag("Player") && !isLit)
         {
             ActivateCheckpoint();
@@ -29,14 +32,22 @@ public class Checkpoint : MonoBehaviour
     void ActivateCheckpoint()
     {
         isLit = true;
-
-        // 1. ÊÓ¾õ±ä»¯
+        
         if (litSprite != null) sr.sprite = litSprite;
         if (lightObj != null) lightObj.SetActive(true);
 
-        // 2. Í¨Öª¹ÜÀíÆ÷¸üĞÂ¸´»îµã
-        GameManager.Instance.UpdateRespawnPoint(transform.position);
+        // ä¼˜å…ˆä½¿ç”¨ spawnPointTransform çš„ä½ç½®ï¼Œå¦‚æœæ²¡æœ‰èµ‹å€¼ï¼Œå°±ç”¨èœ¡çƒ›è‡ªå·±çš„ä½ç½®
+        Vector3 targetPos = transform.position;
+        if (spawnPointTransform != null)
+        {
+            targetPos = spawnPointTransform.position;
+        }
 
-        Debug.Log("´æµµµãÒÑ¼¤»î£¡");
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UpdateRespawnPoint(targetPos);
+        }
+        
+        Debug.Log("å­˜æ¡£ç‚¹å·²æ¿€æ´»ï¼");
     }
 }
