@@ -1,59 +1,69 @@
 using UnityEngine;
-using UnityEngine.SceneManagement; // ±ØĞëÒıÓÃ£º³¡¾°¹ÜÀí
-using UnityEngine.UI; // ±ØĞëÒıÓÃ£ºUI
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using System.Collections;
 
 public class MainMenu : MonoBehaviour
 {
-    [Header("¹ØÓÚÒ³Ãæ")]
+    [Header("å…³äºé¡µé¢")]
     public GameObject aboutPanel;
 
-    [Header("°´Å¥ÒıÓÃ(¿ÉÑ¡£¬ÓÃÓÚ´úÂë¿ØÖÆ)")]
+    [Header("æŒ‰é’®å¼•ç”¨")]
     public Button btnContinue;
 
     void Start()
     {
-        // ¼ì²éÊÇ·ñÓĞ´æµµ (¼òµ¥ÓÃPlayerPrefsÅĞ¶Ï)
-        // Èç¹ûÃ»ÓĞÍæ¹ı£¬"¼ÌĞøÓÎÏ·"°´Å¥Ó¦¸ÃÊÇ»ÒµÄ»òÒş²ØµÄ
         if (!PlayerPrefs.HasKey("HasSavedGame"))
         {
-            if (btnContinue != null) btnContinue.interactable = false;
+            if (btnContinue != null) btnContinue.interactable = false; 
         }
     }
 
-    // --- °´Å¥µã»÷ÊÂ¼ş ---
+    // --- æŒ‰é’®ç‚¹å‡»äº‹ä»¶ ---
 
     public void OnNewGameClicked()
     {
-        // ÕâÀïĞèÒªÇå¿Õ¾É´æµµ(Èç¹ûÓĞµÄ»°)
-        PlayerPrefs.DeleteKey("SavedScene");
-        PlayerPrefs.DeleteKey("RespawnX");
-        // ... ÆäËû´æµµKey
+        // æ’­æ”¾éŸ³æ•ˆ (å¦‚æœæŒ‰é’®ä¸Šæ²¡ç»‘ ButtonSound è„šæœ¬ï¼Œè¿™é‡Œä¹Ÿå¯ä»¥æ‰‹åŠ¨æ’­ä¸€ä¸‹)
+        // if (GameManager.Instance != null) GameManager.Instance.PlayButtonSound();
 
-        // ¼ÓÔØµÚÒ»¹Ø (¼ÙÉèÄãµÄ¹Ø¿¨³¡¾°Ãû½Ğ "Level1")
-        SceneManager.LoadScene("Level1");
+        // å¼€å¯åç¨‹ï¼Œå»¶è¿ŸåŠ è½½
+        StartCoroutine(LoadSceneDelay("Level1", true));
     }
 
     public void OnContinueClicked()
     {
-        // ¶ÁÈ¡´æµµÖĞ¼ÇÂ¼µÄ¹Ø¿¨
-        // ¼ÙÉèÎÒÃÇ´æÁËÒ»¸ö string ½Ğ "SavedScene"
         string sceneName = PlayerPrefs.GetString("SavedScene", "Level1");
-        SceneManager.LoadScene(sceneName);
+        StartCoroutine(LoadSceneDelay(sceneName, false));
     }
 
     public void OnAboutClicked()
     {
-        aboutPanel.SetActive(true);
+        if (aboutPanel != null) aboutPanel.SetActive(true);
     }
 
     public void OnCloseAboutClicked()
     {
-        aboutPanel.SetActive(false);
+        if (aboutPanel != null) aboutPanel.SetActive(false);
     }
 
     public void OnQuitClicked()
     {
-        Debug.Log("ÍË³öÓÎÏ·");
+        Debug.Log("é€€å‡ºæ¸¸æˆ");
         Application.Quit();
+    }
+
+    // --- å»¶è¿ŸåŠ è½½çš„åç¨‹ ---
+    IEnumerator LoadSceneDelay(string sceneName, bool isNewGame)
+    {
+        // ç­‰å¾… 0.3 ç§’ï¼Œè®©ç‚¹å‡»éŸ³æ•ˆæ’­å‡ºæ¥
+        yield return new WaitForSeconds(0.3f);
+
+        if (isNewGame)
+        {
+            PlayerPrefs.DeleteKey("SavedScene");
+            PlayerPrefs.DeleteKey("RespawnX");
+        }
+
+        SceneManager.LoadScene(sceneName);
     }
 }

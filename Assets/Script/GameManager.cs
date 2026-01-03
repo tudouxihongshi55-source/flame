@@ -2,20 +2,22 @@ using UnityEngine;
 using UnityEngine.UI; 
 using System.Collections;
 using TMPro; 
+using UnityEngine.Rendering.Universal;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
     [Header("复活流程设置")]
-    public float deathAnimDuration = 1.0f; // 死亡动画时长
-    public float respawnAnimDuration = 1.0f; // 【新增】复活动画时长
-    public float fadeDuration = 1.0f;      // 黑屏渐变时长
-    public float darkTime = 0.7f;          // 黑屏保持时长
+    public float deathAnimDuration = 1.0f;
+    public float respawnAnimDuration = 1.0f; 
+    public float fadeDuration = 1.0f;      
+    public float darkTime = 0.7f;          
 
     [Header("UI引用")]
-    public Image blackScreen;      // 黑屏遮罩
-    public GameObject respawnText; // 复活提示文字/图片
+    public Image blackScreen;      
+    public GameObject respawnText; 
+    public GameObject winScreen; 
 
     [Header("音效文件")]
     public AudioClip sfxJump;
@@ -25,18 +27,28 @@ public class GameManager : MonoBehaviour
     public AudioClip sfxCheckpoint;
     public AudioClip sfxWin;
     public AudioClip sfxRespawn; 
+    public AudioClip sfxButton; 
 
     private Vector3 currentRespawnPoint;
     private GameObject player;
     private Animator playerAnim;
     private Rigidbody2D playerRb;
-    private AudioSource playerAudio;
+    
+    private AudioSource audioSource; 
+
     private bool isDead = false;
+    public GameObject currentDeathHint; // 【新增】当前需要显示的死亡提示UI
 
     void Awake()
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+        
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
     }
 
     void Start()
@@ -46,7 +58,6 @@ public class GameManager : MonoBehaviour
         {
             playerAnim = player.GetComponent<Animator>();
             playerRb = player.GetComponent<Rigidbody2D>();
-            playerAudio = player.GetComponent<AudioSource>();
             currentRespawnPoint = player.transform.position;
         }
 
@@ -57,13 +68,34 @@ public class GameManager : MonoBehaviour
             blackScreen.color = c;
         }
         if (respawnText != null) respawnText.SetActive(false);
+        if (winScreen != null) winScreen.SetActive(false);
+    }
+
+    // 【新增】设置死亡提示 (由触发器调用)
+    public void SetDeathHint(GameObject uiObj)
+    {
+        currentDeathHint = uiObj;
+    }
+
+    // 【新增】清除死亡提示
+    public void ClearDeathHint()
+    {
+        currentDeathHint = null;
     }
 
     public void PlaySFX(AudioClip clip)
     {
-        if (clip != null && playerAudio != null)
+        if (clip != null && audioSource != null)
         {
-            playerAudio.PlayOneShot(clip);
+            audioSource.PlayOneShot(clip);
+        }
+    }
+
+    public void PlayButtonSound()
+    {
+        if (sfxButton != null)
+        {
+            PlaySFX(sfxButton);
         }
     }
 
@@ -81,10 +113,67 @@ public class GameManager : MonoBehaviour
 
     public void TriggerWin()
     {
+        if (winScreen != null && winScreen.activeSelf) return;
+
         PlaySFX(sfxWin);
+        StartCoroutine(WinSequence());
     }
 
-    // --- 死亡流程 ---
+    // 【新增】触发光照Debuff
+    public void TriggerLightDebuff(float duration, float shrinkRatio)
+    {
+        StartCoroutine(LightDebuffRoutine(duration, shrinkRatio));
+    }
+
+    IEnumerator LightDebuffRoutine(float duration, float shrinkRatio)
+    {
+        if (player == null) yield break;
+
+        Light2D playerLight = player.GetComponentInChildren<Light2D>();
+        
+        if (playerLight != null)
+        {
+            float originalRadius = playerLight.pointLightOuterRadius; 
+            float targetRadius = originalRadius * shrinkRatio;      
+
+            playerLight.pointLightOuterRadius = targetRadius;
+
+            yield return new WaitForSeconds(duration);
+
+            playerLight.pointLightOuterRadius = originalRadius;
+        }
+    }
+
+    IEnumerator WinSequence()
+    {
+        DisablePlayerControl();
+        yield return new WaitForSeconds(1.0f);
+        if (winScreen != null) winScreen.SetActive(true);
+        Time.timeScale = 0f;
+    }
+
+    public void OnNextLevelClicked()
+    {
+        Debug.Log("下一关还没做呢！");
+    }
+
+    public void OnRestartClicked()
+    {
+        StartCoroutine(DelayLoad(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name));
+    }
+
+    public void OnMainMenuClicked()
+    {
+        StartCoroutine(DelayLoad("MainMenu"));
+    }
+
+    IEnumerator DelayLoad(string sceneName)
+    {
+        Time.timeScale = 1f; 
+        yield return new WaitForSeconds(0.3f); 
+        UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+    }
+
     IEnumerator DeathSequence()
     {
         isDead = true;
@@ -93,45 +182,40 @@ public class GameManager : MonoBehaviour
         DisablePlayerControl();
         ResetAnimParameters();
 
-        // 播放死亡动画
         if (playerAnim != null) playerAnim.Play("Death", 0, 0f);
 
-        // 等待死亡动画
         yield return new WaitForSeconds(deathAnimDuration);
 
-        // 屏幕变黑
         yield return StartCoroutine(FadeScreen(0, 1, fadeDuration));
 
-        // 瞬移到复活点
-        player.transform.position = currentRespawnPoint;
+        if (player != null)
+            player.transform.position = currentRespawnPoint + Vector3.up * 0.5f; 
         
-        // 保持黑屏
         yield return new WaitForSeconds(darkTime);
 
-        // 屏幕变亮
         yield return StartCoroutine(FadeScreen(1, 0, fadeDuration));
 
-        // 显示提示
         if (respawnText != null) respawnText.SetActive(true);
+        
+        // 【新增】如果有特殊提示，显示它
+        if (currentDeathHint != null) currentDeathHint.SetActive(true); 
 
-        // 等待按键
         while (!Input.GetKeyDown(KeyCode.Space))
         {
             yield return null;
         }
 
-        // --- 开始复活 ---
         if (respawnText != null) respawnText.SetActive(false);
+        // 【新增】关闭提示
+        if (currentDeathHint != null) currentDeathHint.SetActive(false); 
+        
         PlaySFX(sfxRespawn);
 
-        // 【修改点】播放复活动画并等待
         if (playerAnim != null)
         {
-            // 确保你动画状态机里有个状态叫 "Respawn"
             playerAnim.Play("Respawn", 0, 0f); 
         }
         
-        // 等待复活动画播完
         yield return new WaitForSeconds(respawnAnimDuration);
         
         EnablePlayerControl();
@@ -158,20 +242,35 @@ public class GameManager : MonoBehaviour
 
     void DisablePlayerControl()
     {
-        player.GetComponent<Running>().enabled = false;
-        player.GetComponent<Jumping>().enabled = false;
-        playerRb.velocity = Vector2.zero;
-        playerRb.simulated = false; 
+        if (player != null)
+        {
+            Running r = player.GetComponent<Running>();
+            if (r != null) r.enabled = false;
+            
+            Jumping j = player.GetComponent<Jumping>();
+            if (j != null) j.enabled = false;
+        }
+
+        if (playerRb != null)
+        {
+            playerRb.velocity = Vector2.zero;
+            playerRb.simulated = false; 
+        }
     }
 
     void EnablePlayerControl()
     {
-        playerRb.simulated = true;
-        player.GetComponent<Running>().enabled = true;
-        player.GetComponent<Jumping>().enabled = true;
+        if (playerRb != null) playerRb.simulated = true;
         
-        // 【修改点】这里不再强制播放 Idle，而是相信 Animator 的连线会从 Respawn 自动切回 Idle
-        // 只要重置一下可能残留的 Trigger 即可
+        if (player != null)
+        {
+            Running r = player.GetComponent<Running>();
+            if (r != null) r.enabled = true;
+
+            Jumping j = player.GetComponent<Jumping>();
+            if (j != null) j.enabled = true;
+        }
+        
         if (playerAnim != null)
         {
             playerAnim.ResetTrigger("Die");

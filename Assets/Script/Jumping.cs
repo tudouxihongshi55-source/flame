@@ -16,10 +16,9 @@ public class Jumping : MonoBehaviour
     public float preJumpDuration = 1.0f;
     
     // 动画参数名
-    private string paramPreparing = "isPreparing"; // Pre-jump
-    private string paramRising = "isRising";       // Jumping
-    private string paramFalling = "isFalling";     // Down
-    // 强制状态名 (Animator中必须有这个状态，名字必须一致)
+    private string paramPreparing = "isPreparing"; 
+    private string paramRising = "isRising";       
+    private string paramFalling = "isFalling";     
     private string stateDown = "Down";
 
     [Header("空中移动参数")]
@@ -46,13 +45,19 @@ public class Jumping : MonoBehaviour
     private Animator anim;
     private float moveInput;
     private bool isPreparingJump = false;
-    private bool wasFalling = false; // 用于音效去重
-    private bool wasInAir = false;   // 用于落地音效
+    private bool wasFalling = false;
+    private bool wasInAir = false;   
+    private float lastLandTime = -1f; 
+    private AudioSource audioSource; // 【新增】自己的音响
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
+        // 【新增】获取或添加 AudioSource
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
+        
         RecalculatePhysics();
     }
 
@@ -78,6 +83,15 @@ public class Jumping : MonoBehaviour
         }
     }
 
+    // 叠加升级接口
+    public void AddJumpAbility(float heightAdd, float speedAdd)
+    {
+        maxJumpHeight += heightAdd;
+        maxRiseSpeed += speedAdd;
+        RecalculatePhysics();
+        Debug.Log($"跳跃升级！新高度: {maxJumpHeight}, 新速度: {maxRiseSpeed}");
+    }
+
     void Update()
     {
         moveInput = 0f;
@@ -92,7 +106,7 @@ public class Jumping : MonoBehaviour
             StartCoroutine(PrepareJumpRoutine());
         }
 
-        // Variable Height (松手截断)
+        // Variable Height
         if (enableVariableHeight && Input.GetKeyUp(KeyCode.Space))
         {
             if (rb.velocity.y > 0)
@@ -121,19 +135,32 @@ public class Jumping : MonoBehaviour
         }
         wasFalling = isFalling;
 
-        // 2. 落地音效
-        if (!isGrounded)
+        // 2. 落地音效 (带冷却 + 速度阈值)
+        // 只有当曾经有明显的空中速度时，才标记为 wasInAir
+        // 防止在地面轻微抖动导致反复触发
+        if (Mathf.Abs(vy) > 0.5f)
         {
             wasInAir = true;
         }
-        else
+
+        if (isGrounded && wasInAir)
         {
-            if (wasInAir) // 刚才在空中，现在落地了
+            // 【新增】落地瞬间，掐断跳跃音效
+            if (audioSource != null && audioSource.isPlaying) 
+            {
+                audioSource.Stop();
+            }
+
+            // 只有播放过才更新时间
+            if (Time.time > lastLandTime + 0.5f)
             {
                 if (GameManager.Instance != null)
                     GameManager.Instance.PlaySFX(GameManager.Instance.sfxLand);
-                wasInAir = false;
+                
+                lastLandTime = Time.time;
             }
+            // 无论是否播放了音效，只要判定为落地了，就重置空中状态
+            wasInAir = false;
         }
     }
 
@@ -153,7 +180,6 @@ public class Jumping : MonoBehaviour
         {
             elapsed += Time.deltaTime;
             
-            // 掉落保护
             if (!IsGrounded())
             {
                 isPreparingJump = false;
@@ -182,7 +208,6 @@ public class Jumping : MonoBehaviour
         float velX = rb.velocity.x;
         float velY = rb.velocity.y;
 
-        // 垂直运动处理
         if (velY > 0) 
         {
             rb.gravityScale = calculatedRiseGravityScale;
@@ -196,7 +221,6 @@ public class Jumping : MonoBehaviour
             rb.gravityScale = fallGravityScale;
         }
 
-        // 空中水平移动控制
         if (Mathf.Abs(velY) > 0.01f) 
         {
             if (moveInput != 0)
@@ -232,16 +256,12 @@ public class Jumping : MonoBehaviour
             rb.velocity = new Vector2(rb.velocity.x, reducedSpeed);
         }
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.PlaySFX(GameManager.Instance.sfxJump);
-    }
-
-    // 修改：增加跳跃高度和速度 (叠加模式)
-    public void AddJumpAbility(float heightAdd, float speedAdd)
-    {
-        maxJumpHeight += heightAdd;
-        maxRiseSpeed += speedAdd;
-        RecalculatePhysics();
-        Debug.Log($"跳跃升级！新高度: {maxJumpHeight}, 新速度: {maxRiseSpeed}");
+        if (GameManager.Instance != null && GameManager.Instance.sfxJump != null)
+        {
+            // 【修改】设置为循环播放
+            audioSource.clip = GameManager.Instance.sfxJump;
+            audioSource.loop = true; // 开启循环
+            audioSource.Play();
+        }
     }
 }
